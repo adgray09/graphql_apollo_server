@@ -42,8 +42,11 @@ const myChannels = {
 const resolvers = {
     Query: {
         posts: (_, { channel }) => {
-            var val = myChannels[channel]
-            return val
+            if (myChannels[channel] === undefined) {
+                return null
+            }
+
+            return myChannels[channel]
         },
         channels: () => {
             const channels = Object.keys(myChannels)
@@ -54,10 +57,9 @@ const resolvers = {
     Mutation: {
         addPost: (_, { channel, message }) => {
             var theChannel = myChannels[channel]
-
             const post = { message, date: new Date() }
             theChannel.push(post)
-            pubsub.publish('NEW_POST', { newPost: post })
+            pubsub.publish(`NEW_POST_${channel}`, { newPost: post })
             return post
         },
         createChannel: (_, { name }) => {
@@ -76,7 +78,7 @@ const resolvers = {
     },
     Subscription: {
         newPost: {
-            subscribe: () => pubsub.asyncIterator('NEW_POST')
+            subscribe: (_, { channel }) => pubsub.asyncIterator(`NEW_POST_${channel}`)
         },
         newChannel: {
             subscribe: () => pubsub.asyncIterator('CHANNELS')
